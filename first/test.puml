@@ -1,0 +1,37 @@
+@startuml
+actor User #Red/Yellow
+participant "Controller" as CT #Blue/White
+participant "Service" as SVC #Purple/White
+participant "Repository" as Repo #Cyan/White
+participant "FNS" as FNS #Green/White
+
+User -> CT: Pay SBP
+CT -> SVC: Pay SBP
+
+group Begin Transaction
+    SVC -> Repo: Begin Tx
+    SVC -> Repo: Query Data
+    SVC -> Repo: Save Data
+
+    alt Commit Success
+        SVC -> Repo: Commit Tx
+        alt FNS Success
+            SVC -> FNS: Create Receipt
+        else FNS Fail
+            SVC -X FNS: Create Receipt
+            FNS -[#red]-> SVC: Error
+            SVC -> Repo: Rollback Tx
+            SVC -> CT: Return Error
+            CT -> User: Display Error
+        end alt
+        SVC -> User: Display Data
+    else Commit Failure
+        SVC -X Repo: Commit Tx
+        Repo -[#red]-> SVC: Error
+        SVC -> Repo: Rollback Tx
+        SVC -> CT: Return Error
+        CT -> User: Display Error
+    end alt
+end group
+
+@enduml
